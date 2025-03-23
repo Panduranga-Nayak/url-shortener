@@ -1,29 +1,35 @@
 import { Response } from 'express';
-
-import { LoggerRegistry } from '../logger/loggerRegistry';
-
-const log = LoggerRegistry.getLogger();
+import { UserService } from '../services/user.service';
+import { handleErrorResponse } from '../utils/errorHandler';
 
 
 class UserController {
+    private userService: UserService;
 
     constructor() {
-        this.testRoute = this.testRoute.bind(this);
+        this.userService = UserService.getInstance();
+
+        this.findOrCreate = this.findOrCreate.bind(this);
     }
 
-    public async testRoute(req: any, res: Response): Promise<void> {
-        const functionName = "testRoute"
-        log.info(functionName, 'Token has expired');
+    public async findOrCreate(req: any, res: Response): Promise<void> {
+        const functionName = "findOrCreateController"
+        const { refreshToken, profile } = req.user;
         try {
+            const userInfo = await this.userService.findOrCreate({ profile, refreshToken });
+
             res.status(200).json({
                 success: true,
-                data: "hello"
+                data: userInfo
             })
         } catch (e) {
-            res.status(500).json({
+            const { STATUS_CODE, message } = handleErrorResponse(e, functionName);
+            res.status(STATUS_CODE).json({
                 success: false,
-                message: e
+                message: message
             });
+        } finally {
+            return;
         }
     }
 }

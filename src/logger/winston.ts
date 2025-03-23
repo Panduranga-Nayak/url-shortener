@@ -1,3 +1,4 @@
+import { map } from 'lodash';
 import { AbstractLogger } from '../logger/abstractLogger'
 import { createLogger, format, transports } from "winston";
 const { combine, timestamp, json } = format;
@@ -21,18 +22,18 @@ class WinstonLogger extends AbstractLogger {
     }
 
     public static getInstance() {
-        if(!this.instance) {
+        if (!this.instance) {
             this.instance = new WinstonLogger();
         }
         return this.instance;
     }
 
-    public info(message: string, meta = {}): void {
-        this.logger.info(message, meta);
+    public info(...params: any[]): void {
+        this.logger.info(map(params, (p => typeof p === "object" ? JSON.stringify(p) : p)));
     }
 
-    public error(message: string, meta = {}): void {
-        this.logger.error(message, meta);
+    public error(...params: any[]): void {
+        this.logger.error(map(params, (p => typeof p === "object" ? JSON.stringify(p) : p)));
     }
 }
 

@@ -1,4 +1,4 @@
 export abstract class AbstractLogger {
-    abstract info(message: string, meta?: any): void;
-    abstract error(message: string, meta?: any): void;
+    abstract info(...params: any[]): void;
+    abstract error(...params: any[]): void;
 }
