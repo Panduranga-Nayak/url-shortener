@@ -1,5 +1,9 @@
 import { Response } from 'express';
 
+import { LoggerRegistry } from '../logger/loggerRegistry';
+
+const log = LoggerRegistry.getLogger();
+
 
 class UserController {
 
@@ -9,6 +13,7 @@ class UserController {
 
     public async testRoute(req: any, res: Response): Promise<void> {
         const functionName = "testRoute"
+        log.info(functionName, 'Token has expired');
         try {
             res.status(200).json({
                 success: true,

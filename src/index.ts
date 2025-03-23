@@ -5,6 +5,8 @@ dotenv.config();
 import express, { Application } from 'express';
 import { BootInitializer } from './boot';
 import userRouter from './routes/user.routes';
+import WinstonLogger from "./logger/winston";
+import { LoggerRegistry } from "./logger/loggerRegistry";
 
 
 const app: Application = express();
@@ -21,6 +23,8 @@ app.use(express.json());
 
 
 app.use("/api/user", userRouter);
+
+LoggerRegistry.setLogger(WinstonLogger.getInstance());
 
 
 
