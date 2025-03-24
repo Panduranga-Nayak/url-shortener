@@ -1,18 +1,18 @@
 import { Request, Response, NextFunction } from "express";
-import { JWTMiddleware } from './jwt.middleware';
 import { isEmpty } from "lodash";
+import { AuthService } from "../services/auth/auth.service";
+import { VerifyJwtRes } from "../types/auth.types";
 
 export default class AuthMiddleware {
-    private jwtMiddleware: JWTMiddleware;
+    private authService: AuthService;
 
     public constructor() {
-        this.jwtMiddleware = new JWTMiddleware();
+        this.authService = AuthService.getInstance();
 
         this.authenticate = this.authenticate.bind(this);
     }
 
     public async authenticate(req: Request, res: Response, next: NextFunction): Promise<void> {
-        // const authType = req.headers.authorizationtype as string;
         const accessToken = req.headers.authorization;
 
         if (!accessToken || isEmpty(accessToken)) {
@@ -21,7 +21,7 @@ export default class AuthMiddleware {
         }
 
         try {
-            const userVerify: any = await this.jwtMiddleware.verifyJwt(accessToken);
+            const userVerify: VerifyJwtRes = await this.authService.verifyJwt(accessToken);
 
             req.user = { userId: userVerify.userId };
 

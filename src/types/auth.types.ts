@@ -7,5 +7,11 @@ export interface RefreshTokenRequest {
 export interface LogoutRequest {
     accessToken: string 
     refreshToken: string
-    authType: string
+    // authType: string
+}
+
+export interface VerifyJwtRes {
+    userId: string,
+    refreshToken?: string,
+    authorizationtype?: string,
 }

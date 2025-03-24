@@ -16,12 +16,16 @@ class AuthController {
     public async logout(req: Request, res: Response): Promise<void> {
         const functionName = "logoutController"
         try {
-            const authType = req.headers.authorizationtype as string;
+            // const authType = req.headers.authorizationtype as string;
             let accessToken = req.headers.authorization!;
             accessToken = accessToken.split(" ")[1] || "";
-            const data = { refreshToken: req.headers.refreshtoken as string, accessToken, authType };
 
-            if(isEmpty(data.refreshToken) || isEmpty(data.authType)) {
+            let refreshToken = req.headers.refreshtoken! as string;
+            refreshToken = refreshToken.split(" ")[1] || "";
+
+            const data = { refreshToken: req.headers.refreshtoken as string, accessToken };
+
+            if(isEmpty(data.refreshToken)) {
                 res.status(400).json({
                     success: false,
                     message: "refreshToken and authType must be sent in headers"
@@ -51,9 +55,9 @@ class AuthController {
     public async refreshToken(req: Request, res: Response): Promise<void> {
         const functionName = "refreshTokenController"
         try {
-            const { authorizationtype, authorization, userId } = req.body;
+            const { refreshtoken } = req.headers;
 
-            const newToken = await this.authService.refreshToken({ authorizationtype, authorization, userId });
+            const newToken = await this.authService.refreshToken(refreshtoken as string);
 
             res.status(200).json({
                 success: true,

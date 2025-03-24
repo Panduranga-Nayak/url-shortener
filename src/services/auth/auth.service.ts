@@ -10,7 +10,7 @@ import { RedisCache } from '../../boot/redisCache';
 import { expireTime } from '../../utils/redisConstants';
 import { isEmpty } from 'lodash';
 import { LoggerRegistry } from '../../logger/loggerRegistry';
-import { LogoutRequest, RefreshTokenRequest } from '../../types/auth.types';
+import { LogoutRequest, RefreshTokenRequest, VerifyJwtRes } from '../../types/auth.types';
 
 const log = LoggerRegistry.getLogger();
 
@@ -68,15 +68,23 @@ export class AuthService {
         return createAuth;
     }
 
-    public async refreshToken(data: RefreshTokenRequest) {
-        const strategy: AuthStratergyInterface = AuthFactory.getAuthService(data.authorizationtype);
-        //convert this to promise.all
-        const newToken = await strategy.refreshToken(data.authorization);
-        const jwtToken = await this.generateJwt({ userId: data.userId }, expireTime.ACCESS_TOKEN);
+    public async refreshToken(refreshToken: string) {
+        const tokenData: VerifyJwtRes = await this.verifyJwt(refreshToken);
+
+        const strategy: AuthStratergyInterface = AuthFactory.getAuthService(tokenData.authorizationtype!);
+
+        const newToken = await strategy.refreshToken(tokenData.refreshToken!);
+
+        const jwtToken = await this.generateJwt({ userId: tokenData.userId }, expireTime.ACCESS_TOKEN);
+        const refreshTokenJwt = await this.generateJwt({ 
+            userId: tokenData.userId!, 
+            authorizationtype: tokenData.authorizationtype, 
+            refreshToken: newToken.refresh_token || tokenData.refreshToken
+        }, expireTime.REFRESH_TOKEN);
 
         return {
             accessToken: jwtToken.accessToken,
-            refreshToken: newToken.refresh_token || data.authorization
+            refreshToken: refreshTokenJwt.accessToken
         };
     }
 
@@ -87,9 +95,9 @@ export class AuthService {
     }
 
 
-    public async generateJwt(data: { userId: string }, duration: string = expireTime.ACCESS_TOKEN) {
+    public async generateJwt(data: Record<string, any>, duration: string = expireTime.ACCESS_TOKEN) {
         const privateKey = fs.readFileSync('private.pem', 'utf8');
-        const token = jwt.sign({ userId: data.userId }, privateKey, {
+        const token = jwt.sign({ ...data }, privateKey, {
             algorithm: 'RS256',
             expiresIn: duration as jwt.SignOptions['expiresIn']
         });
@@ -99,16 +107,48 @@ export class AuthService {
         };
     }
 
+    public async verifyJwt(token: string): Promise<VerifyJwtRes> {
+        const functionName = "verifyJwtMiddleware"
+        try {
+            const jwtToken = token.split(" ")[1];
+            const isBlacklisted = await this.isTokenBlacklisted(jwtToken);
+            if (isBlacklisted) {
+                throw new Error("TokenBlacklisted");
+            }
+
+            const publicKey = fs.readFileSync('public.pem', 'utf8');
+            const decoded = jwt.verify(jwtToken, publicKey, { algorithms: ['RS256'] });
+
+            return decoded as VerifyJwtRes;
+        } catch (error: any) {
+            if (error.name === 'TokenExpiredError') {
+                log.info(functionName, 'Token has expired');
+            } else {
+                log.info(functionName, 'Invalid token');
+            }
+            return Promise.reject({
+                success: false,
+                message: error.message
+            });
+        }
+    }
+
     public async logout(data: LogoutRequest) {
         const functionName = "logout";
         const tokenHash = crypto.createHash("sha256").update(data.accessToken).digest("hex");
         try {
+            const tokenData: VerifyJwtRes = await this.verifyJwt(data.refreshToken);
             await this.redis.setEx(`BLACKLIST-TOKEN-${tokenHash}`, "INVALID_TOKEN", expireTime.JWT_TOKEN);
             log.info(functionName, "token blacklisted");
+
+            const authService = AuthFactory.getAuthService(tokenData.authorizationtype!);
+            return await authService.invalidateRefreshToken(tokenData.refreshToken!);
         } catch (e) {
             log.info(functionName, e);
+            return Promise.reject({
+                success: false,
+                message: "something went wrong"
+            })
         }
-        const authService = AuthFactory.getAuthService(data.authType);
-        return await authService.invalidateRefreshToken(data.refreshToken);
     }
 }

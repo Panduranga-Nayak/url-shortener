@@ -75,18 +75,14 @@ export class UserService {
         }
 
         const token = await this.authService.generateJwt({ userId: user.id! }, expireTime.ACCESS_TOKEN);
+        const refreshTokenJwt = await this.authService.generateJwt({ userId: user.id!, authorizationtype: profile.provider, refreshToken }, expireTime.REFRESH_TOKEN);
+        
         log.info(functionName, "token generated");
-        user = {
-            userId: user.id,
-            refreshToken: refreshToken,
-            accessToken: token.accessToken,
-            authorizationType: profile.provider,
-        }
 
         return {
-            userId: user.userId,
-            refreshToken: refreshToken,
-            accessToken: user.accessToken,
+            userId: user.id,
+            refreshToken: refreshTokenJwt.accessToken,
+            accessToken: token.accessToken,
             authorizationType: profile.provider,
         }
     }
