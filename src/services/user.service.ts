@@ -3,6 +3,7 @@ import { User } from '../entities/sql/User';
 import { FindOrCreateRequest } from '../types/user.types';
 import { AuthService } from './auth/auth.service';
 import { LoggerRegistry } from '../logger/loggerRegistry';
+import { expireTime } from '../utils/redisConstants';
 
 
 const log = LoggerRegistry.getLogger();
@@ -73,7 +74,7 @@ export class UserService {
             })
         }
 
-        const token = await this.authService.generateJwt({ userId: user.id! });
+        const token = await this.authService.generateJwt({ userId: user.id! }, expireTime.ACCESS_TOKEN);
         log.info(functionName, "token generated");
         user = {
             userId: user.id,
