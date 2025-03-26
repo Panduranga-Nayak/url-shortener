@@ -4,6 +4,8 @@ import { FindOrCreateRequest } from '../types/user.types';
 import { AuthService } from './auth/auth.service';
 import { LoggerRegistry } from '../logger/loggerRegistry';
 import { expireTime } from '../utils/redisConstants';
+import { KafkaProducer } from '../kafka/kafkaProducer';
+import { KafkaTopics } from '../utils/kafkaTopics';
 
 
 const log = LoggerRegistry.getLogger();
@@ -12,10 +14,12 @@ export class UserService {
     private static instance: UserService | null = null;
     private userDAO: UserDAO;
     private authService: AuthService;
+    private kafkaProducer: KafkaProducer;
 
     private constructor() {
         this.userDAO = new UserDAO();
         this.authService = AuthService.getInstance();
+        this.kafkaProducer = KafkaProducer.getInstance();
     }
 
     static getInstance() {
@@ -62,9 +66,17 @@ export class UserService {
         if (!findUser) {
             user = await this.create({ email, provider: profile.provider, providerUserId: profile.id }, refreshToken);
             log.info(functionName, "createUser", user);
+            
+            await this.kafkaProducer.sendMessage(KafkaTopics.EMAIL_EVENTS, {
+                sendTo: email,
+                subject: "Welcome to URL Shortener!",
+                emailBody: "Hi there 👋,\n\nThanks for signing up with URL Shortener!\nYou're all set to start creating and managing short links.\n\nHappy shortening!\n— The URL Shortener Team"
+            });
         } else {
             log.info(functionName, "foundUser", findUser);
-            if (!findUser.isActive) await this.toggleUserStatus(findUser.id!, true);
+            if (!findUser.isActive) {
+                await this.toggleUserStatus(findUser.id!, true);
+            }
 
             //u could technically make a left join directly with findUser -> improvement ###
             await this.authService.findOrCreate({

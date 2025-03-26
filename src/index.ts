@@ -8,6 +8,8 @@ import userRouter from './routes/user.routes';
 import authRouter from './routes/auth.router';
 import WinstonLogger from "./logger/winston";
 import { LoggerRegistry } from "./logger/loggerRegistry";
+import { KafkaProducer } from "./kafka/kafkaProducer";
+import { stopKafkaConsumers } from "./boot/kafkaConsumers";
 
 
 const app: Application = express();
@@ -42,5 +44,13 @@ async function startServer() {
     console.error('Error initializing services:', error);
   }
 }
+
+//shutdown kafka when shutting server
+process.on("SIGINT", async () => {
+  console.log("🛑 Shutting down gracefully...");
+  await KafkaProducer.getInstance().disconnect();
+  await stopKafkaConsumers();
+  process.exit(0);
+});
 
 startServer();

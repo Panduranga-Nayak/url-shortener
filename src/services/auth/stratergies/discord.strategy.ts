@@ -74,7 +74,11 @@ export class DiscordStrategy implements AuthStratergyInterface {
 
             return response.data;
         } catch (error: any) {
-            return Promise.reject(error);
+            return Promise.reject({
+                success: false,
+                isCustomError: true,
+                message: "Token has been expired or revoked."
+            });
         }
     }
 

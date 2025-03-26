@@ -2,6 +2,7 @@ import { DatabaseProvider } from './databaseProvider';
 import { Database } from './database';
 import { RedisCache } from './redisCache';
 import { MongoDatabase } from './mongoDatabase';
+import { startKafkaConsumers } from './kafkaConsumers';
 
 //change the file name to BootInitializer
 export class BootInitializer {
@@ -19,6 +20,7 @@ export class BootInitializer {
         try {
             await this.pgDatabase.initialize();
             await this.mongoDB.initialize();
+            await startKafkaConsumers();
 
             console.log("Connected to Postgres Database Successfully");
         } catch (e) {
