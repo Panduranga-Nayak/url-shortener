@@ -1,8 +1,12 @@
+import { KafkaClickEvent } from "../kafka/kafkaClickEvent";
 import { KafkaEmailEvent } from "../kafka/kafkaEmailEvent";
 
+const clickConsumer = KafkaClickEvent.getInstance();
 const emailConsumer = KafkaEmailEvent.getInstance();
 
+
 export async function startKafkaConsumers() {
+  clickConsumer.start();
   emailConsumer.start();
 }
 

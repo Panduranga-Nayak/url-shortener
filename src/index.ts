@@ -10,6 +10,10 @@ import WinstonLogger from "./logger/winston";
 import { LoggerRegistry } from "./logger/loggerRegistry";
 import { KafkaProducer } from "./kafka/kafkaProducer";
 import { stopKafkaConsumers } from "./boot/kafkaConsumers";
+import discordStratergy from "./services/auth/stratergies/discord.strategy";
+import googleStratergy from "./services/auth/stratergies/google.strategy";
+import shortUrlRouter from './routes/shortUrl.routes';
+import trackingUrlRouter from './routes/trackingUrl.routes';
 
 
 const app: Application = express();
@@ -25,8 +29,13 @@ app.use(cors(corsOptions));
 app.use(express.json());
 
 
+app.use(discordStratergy.getInstance().initialize());
+app.use(googleStratergy.getInstance().initialize());
+
 app.use("/api/user", userRouter);
 app.use("/api/auth", authRouter);
+app.use("/api/short-url", shortUrlRouter);
+app.use("/api/tracking-url", trackingUrlRouter);
 
 LoggerRegistry.setLogger(WinstonLogger.getInstance());
 
