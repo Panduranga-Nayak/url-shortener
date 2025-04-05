@@ -98,4 +98,8 @@ export class UserService {
             authorizationType: profile.provider,
         }
     }
+
+    public async findByIds(id: string[]){
+        return await this.userDAO.findByIds(id);
+    }
 }

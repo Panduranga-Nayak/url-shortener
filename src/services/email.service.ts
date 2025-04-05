@@ -31,4 +31,20 @@ export class EmailService {
             log.error(`Error sending email to ${data.sendTo}:`, error);
         }
     }
+
+    public generateEmailBodyDataProcessing(userId: string, reportData: Record<string, any>) {
+        let body = `This is the report for all the short URLs for the last 24 hours.\n\n`;
+
+        for(const key in reportData[userId]) {
+            const [shortUrl, utmSource, utmCampaign] = key.split("|");
+            const interactionCount = reportData[userId][key];
+
+            if (utmSource === "NA" && utmCampaign === "NA") {
+                body += `${shortUrl} has had ${interactionCount} interaction(s).\n`;
+            } else {
+                body += `${shortUrl} on ${utmSource} in the ${utmCampaign} campaign has had ${interactionCount} interaction(s).\n`;
+            }
+        }
+        return body;
+    }
 }
